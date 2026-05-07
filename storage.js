@@ -56,10 +56,15 @@ class PostStorage {
 class ConfigManager {
   constructor() {
     this.communityConfigs = {};
+    this.donorChatIds = [];
     this.loadConfigurations();
   }
   
   loadConfigurations() {
+    if (COMMUNITIES_CONFIG.donor) {
+      this.donorChatIds = (process.env[COMMUNITIES_CONFIG.donor.chatIdsEnv] || '').split(',').filter(id => id.trim());
+    }
+
     for (const [communityKey, communityData] of Object.entries(COMMUNITIES_CONFIG.communities)) {
       const chatIds = (process.env[communityData.chatIdsEnv] || '').split(',').filter(id => id.trim());
       const footerText = process.env[communityData.footerTextEnv] || '';
@@ -84,8 +89,16 @@ class ConfigManager {
     return this.communityConfigs;
   }
   
+  getDonorChatIds() {
+    return this.donorChatIds;
+  }
+  
+  isDonorChat(chatId) {
+    return this.donorChatIds.some(id => id.toString() === chatId.toString());
+  }
+  
   isConfigured() {
-    return Object.values(this.communityConfigs).some(config => config.chatIds.length > 0);
+    return this.getDonorChatIds().length > 0 || Object.values(this.communityConfigs).some(config => config.chatIds.length > 0);
   }
 }
 

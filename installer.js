@@ -75,6 +75,27 @@ async function promptForAdminId(existingEnv) {
   return adminId;
 }
 
+async function promptForDonor(existingEnv) {
+  if (!COMMUNITIES_CONFIG.donor) {
+    return '';
+  }
+
+  const donorEnvKey = COMMUNITIES_CONFIG.donor.chatIdsEnv;
+  const existingValue = existingEnv[donorEnvKey];
+
+  console.log('\n🏁 === КОНФИГУРАЦИЯ: Донорский канал / группа ===\n');
+  if (existingValue) {
+    console.log(`✓ ${donorEnvKey} уже установлен: ${existingValue}`);
+    const change = await question('Изменить? (y/n): ');
+    if (change.toLowerCase() !== 'y') {
+      return existingValue;
+    }
+  }
+
+  const newChatIds = await question('Введите ID донорского чата/канала (через запятую): ');
+  return newChatIds || existingValue || '';
+}
+
 async function promptForCommunity(communityKey, communityName, existingEnv) {
   const config = COMMUNITIES_CONFIG.communities[communityKey];
   
@@ -116,6 +137,7 @@ async function interactiveInstall() {
   // Запрос основных параметров
   newEnv.BOT_TOKEN = await promptForBotToken(existingEnv);
   newEnv.ADMIN_USER_ID = await promptForAdminId(existingEnv);
+  newEnv[COMMUNITIES_CONFIG.donor.chatIdsEnv] = await promptForDonor(existingEnv);
   
   // Запрос параметров сообществ
   const setupCommunities = await question('\nЗадать параметры сообществ? (y/n): ');
