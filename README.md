@@ -36,6 +36,44 @@ node index.js --install
 npm start
 ```
 
+## 🌐 Развертывание
+
+### Локально
+```bash
+npm install
+npm run install
+npm start
+```
+
+### На VPS (Linux)
+```bash
+chmod +x deploy-vps.sh
+./deploy-vps.sh
+```
+
+### С Docker
+```bash
+docker-compose up -d --build
+```
+📖 [Подробная инструкция Docker](DEPLOY_DOCKER.md)
+
+### На Heroku
+```bash
+heroku create your-app-name
+git push heroku main
+```
+📖 [Подробная инструкция Heroku](DEPLOY_HEROKU.md)
+
+### Из приватного GitHub репозитория
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd YOUR_REPO_NAME
+npm install
+npm run install
+npm start
+```
+
+
 ## 📝 Использование
 
 ### Отправка поста в конкретное сообщество

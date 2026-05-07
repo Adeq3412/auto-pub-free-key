@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd \"c:\\\\projects\\\\auto pub free key\" ; git add \\.$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
