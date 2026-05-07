@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "install": "node index.js --install",
+    "setup": "node index.js --install",
     "config": "node show-config.js",
     "posts": "node view-posts.js",
     "add-community": "node add-community.js"

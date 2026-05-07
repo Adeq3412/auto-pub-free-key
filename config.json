@@ -1,0 +1,22 @@
+{
+  "donor": {
+    "name": "Донорский канал",
+    "chatIdsEnv": "DONOR_CHAT_IDS"
+  },
+  "communities": {
+    "main": {
+      "name": "Основное сообщество",
+      "chatIdsEnv": "MAIN_CHAT_IDS",
+      "footerTextEnv": "MAIN_FOOTER_TEXT",
+      "helpLinkEnv": "MAIN_HELP_LINK",
+      "additionalLinksEnv": "MAIN_ADDITIONAL_LINKS"
+    },
+    "incy": {
+      "name": "INCY сообщество",
+      "chatIdsEnv": "INCY_CHAT_IDS",
+      "footerTextEnv": "INCY_FOOTER_TEXT",
+      "helpLinkEnv": "INCY_HELP_LINK",
+      "additionalLinksEnv": "INCY_ADDITIONAL_LINKS"
+    }
+  }
+}
