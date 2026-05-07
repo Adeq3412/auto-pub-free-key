@@ -1,0 +1,19 @@
+{
+  "name": "telegram-installer-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot with installer/update logic and community-specific footers.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "install": "node index.js --install",
+    "config": "node show-config.js",
+    "posts": "node view-posts.js",
+    "add-community": "node add-community.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "telegraf": "^4.15.0"
+  }
+}
