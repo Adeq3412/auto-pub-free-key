@@ -67,6 +67,7 @@ class ConfigManager {
 
     for (const [communityKey, communityData] of Object.entries(COMMUNITIES_CONFIG.communities)) {
       const chatIds = (process.env[communityData.chatIdsEnv] || '').split(',').filter(id => id.trim());
+      const headerText = process.env[communityData.headerTextEnv] || '';
       const footerText = process.env[communityData.footerTextEnv] || '';
       const helpLink = process.env[communityData.helpLinkEnv] || '';
       const additionalLinks = process.env[communityData.additionalLinksEnv] || '';
@@ -74,6 +75,7 @@ class ConfigManager {
       this.communityConfigs[communityKey] = {
         name: communityData.name,
         chatIds,
+        headerText,
         footerText,
         helpLink,
         additionalLinks

@@ -15,7 +15,14 @@ function isAdmin(ctx) {
 }
 
 function buildFullMessage(config, postText) {
-  let message = postText;
+  let message = '';
+  
+  if (config.headerText) {
+    message += config.headerText + '\n\n';
+  }
+  
+  message += postText;
+  
   if (config.footerText) {
     message += '\n\n' + config.footerText;
   }

@@ -7,6 +7,7 @@
     "main": {
       "name": "Основное сообщество",
       "chatIdsEnv": "MAIN_CHAT_IDS",
+      "headerTextEnv": "MAIN_HEADER_TEXT",
       "footerTextEnv": "MAIN_FOOTER_TEXT",
       "helpLinkEnv": "MAIN_HELP_LINK",
       "additionalLinksEnv": "MAIN_ADDITIONAL_LINKS"
@@ -14,9 +15,26 @@
     "incy": {
       "name": "INCY сообщество",
       "chatIdsEnv": "INCY_CHAT_IDS",
+      "headerTextEnv": "INCY_HEADER_TEXT",
       "footerTextEnv": "INCY_FOOTER_TEXT",
       "helpLinkEnv": "INCY_HELP_LINK",
       "additionalLinksEnv": "INCY_ADDITIONAL_LINKS"
+    },
+    "happ": {
+      "name": "HAPP сообщество",
+      "chatIdsEnv": "HAPP_CHAT_IDS",
+      "headerTextEnv": "HAPP_HEADER_TEXT",
+      "footerTextEnv": "HAPP_FOOTER_TEXT",
+      "helpLinkEnv": "HAPP_HELP_LINK",
+      "additionalLinksEnv": "HAPP_ADDITIONAL_LINKS"
+    },
+    "v2raytun": {
+      "name": "v2raytun сообщество",
+      "chatIdsEnv": "V2RAYTUN_CHAT_IDS",
+      "headerTextEnv": "V2RAYTUN_HEADER_TEXT",
+      "footerTextEnv": "V2RAYTUN_FOOTER_TEXT",
+      "helpLinkEnv": "V2RAYTUN_HELP_LINK",
+      "additionalLinksEnv": "V2RAYTUN_ADDITIONAL_LINKS"
     }
   }
 }
