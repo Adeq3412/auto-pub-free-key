@@ -33,16 +33,38 @@ function formatLinksAsCode(text) {
   });
 }
 
+function formatRichText(text) {
+  const placeholders = [];
+  const textWithPlaceholders = text.replace(/<tg-emoji\s+emoji-id="(\d+)">([\s\S]*?)<\/tg-emoji>/g, (match, emojiId, fallback) => {
+    const index = placeholders.length;
+    placeholders.push(`<tg-emoji emoji-id="${emojiId}">${escapeHtml(fallback)}</tg-emoji>`);
+    return `__TG_EMOJI_${index}__`;
+  });
+
+  let escaped = escapeHtml(textWithPlaceholders);
+  placeholders.forEach((placeholder, index) => {
+    escaped = escaped.replace(`__TG_EMOJI_${index}__`, placeholder);
+  });
+
+  return escaped;
+}
+
 function formatTextLinks(text) {
   return text
     .split(/\r?\n/)
     .map((line) => {
       const match = line.match(/^(.+?)\s*\((https?:\/\/[^)\s]+)\)\s*$/);
       if (!match) {
-        return escapeHtml(line);
+        return formatRichText(line);
       }
 
-      return `<a href="${escapeHtml(match[2])}">${escapeHtml(match[1].trim())}</a>`;
+      const label = match[1].trim();
+      const customEmojiMatch = label.match(/^(<tg-emoji\s+emoji-id="\d+">[\s\S]*?<\/tg-emoji>)\s*(.+)$/);
+      if (customEmojiMatch) {
+        return `${formatRichText(customEmojiMatch[1])} <a href="${escapeHtml(match[2])}">${formatRichText(customEmojiMatch[2])}</a>`;
+      }
+
+      return `<a href="${escapeHtml(match[2])}">${formatRichText(label)}</a>`;
     })
     .join('\n');
 }
