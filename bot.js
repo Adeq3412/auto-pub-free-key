@@ -24,7 +24,7 @@ function escapeHtml(text) {
 
 const VPN_KEY_PATTERN = /\b(?:vless|vmess|trojan|ss|ssr|hysteria|hysteria2|hy2|tuic|wireguard):\/\/[^\s<]+/gi;
 const SOURCE_HEADER_PATTERN = /^\s*🎁[^\r\n]*(?:\r?\n)+♾️?\s*Безлимитный трафик(?:\r?\n)+🗓\s*Срок действия:\s*2 дня\s*(?:\r?\n)*/u;
-const SOURCE_FOOTER_PATTERN = /(?:\r?\n)*💗\s*С нас ключ\s*-\s*с (?:тебя|Вас) реакция:\s*(?:\r?\n)+🔥\s*—\s*Ключи\s*-\s*(?:огонь|работают)\s*\|\s*👍—\s*(?:Спасибо|От души)\s*$/u;
+const SOURCE_TRAILER_PATTERN = /(?:\r?\n)*💗\s*С нас ключ\s*-\s*с (?:тебя|Вас) реакция:\s*(?:\r?\n)+🔥\s*—\s*Ключи\s*-\s*(?:огонь|работают)\s*\|\s*👍—\s*(?:Спасибо|От души)[\s\S]*$/u;
 
 function formatLinksAsCode(text) {
   const escaped = escapeHtml(text);
@@ -33,17 +33,31 @@ function formatLinksAsCode(text) {
   });
 }
 
+function formatTextLinks(text) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => {
+      const match = line.match(/^(.+?)\s*\((https?:\/\/[^)\s]+)\)\s*$/);
+      if (!match) {
+        return escapeHtml(line);
+      }
+
+      return `<a href="${escapeHtml(match[2])}">${escapeHtml(match[1].trim())}</a>`;
+    })
+    .join('\n');
+}
+
 function stripSourceHeader(text) {
   return text.replace(SOURCE_HEADER_PATTERN, '').trimStart();
 }
 
-function stripSourceFooter(text) {
-  return text.replace(SOURCE_FOOTER_PATTERN, '').trimEnd();
+function stripSourceTrailer(text) {
+  return text.replace(SOURCE_TRAILER_PATTERN, '').trimEnd();
 }
 
 function buildFullMessage(config, postText) {
   let message = '';
-  const bodyText = stripSourceFooter(stripSourceHeader(postText));
+  const bodyText = stripSourceTrailer(stripSourceHeader(postText));
   
   if (config.headerText) {
     message += escapeHtml(config.headerText) + '\n\n';
@@ -55,7 +69,7 @@ function buildFullMessage(config, postText) {
     message += '\n\n' + escapeHtml(config.footerText);
   }
   if (config.additionalLinks) {
-    message += '\n' + escapeHtml(config.additionalLinks);
+    message += '\n\n' + formatTextLinks(config.additionalLinks);
   }
   return message;
 }
