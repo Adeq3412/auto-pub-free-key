@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-const STORAGE_FILE = path.join(__dirname, 'posts.json');
+const STORAGE_FILE = process.env.POSTS_FILE || path.join(__dirname, 'posts.json');
 const COMMUNITIES_CONFIG = require('./config.json');
 
 function readTextEnv(envKey) {

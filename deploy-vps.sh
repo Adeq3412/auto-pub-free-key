@@ -1,71 +1,114 @@
-#!/bin/bash
-# Скрипт развертывания на VPS (Ubuntu/Debian)
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "🚀 Развертывание Telegram Auto Publisher Bot"
+APP_DIR="${APP_DIR:-$PWD}"
+COMPOSE_SERVICE="${COMPOSE_SERVICE:-telegram-bot}"
 
-# Обновление системы
-echo "📦 Обновление системы..."
-sudo apt update && sudo apt upgrade -y
+log() {
+  printf '\n%s\n' "$1"
+}
 
-# Установка Node.js (если не установлен)
-echo "📦 Установка Node.js..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
+have_command() {
+  command -v "$1" >/dev/null 2>&1
+}
 
-# Установка Git (если не установлен)
-echo "📦 Установка Git..."
-sudo apt install -y git
+install_docker() {
+  if have_command docker; then
+    log "Docker is already installed."
+  else
+    log "Docker is not installed. Installing Docker..."
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates curl gnupg
+    sudo install -m 0755 -d /etc/apt/keyrings
+    . /etc/os-release
+    if [ "$ID" != "ubuntu" ] && [ "$ID" != "debian" ]; then
+      echo "Unsupported distro for automatic Docker install: $ID. Install Docker manually and rerun this script." >&2
+      exit 1
+    fi
 
-# Клонирование репозитория
-echo "📥 Клонирование репозитория..."
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git bot
-cd bot
+    curl -fsSL "https://download.docker.com/linux/${ID}/gpg" | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/${ID} ${VERSION_CODENAME} stable" \
+      | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  fi
 
-# Установка зависимостей
-echo "📦 Установка зависимостей..."
-npm install
+  sudo systemctl enable docker
+  sudo systemctl start docker
+}
 
-# Создание .env файла (нужно заполнить вручную)
-echo "⚙️ Создание конфигурации..."
-cp .env.example .env
-echo "❗ Не забудьте отредактировать .env файл с вашими данными!"
+compose_cmd() {
+  if docker compose version >/dev/null 2>&1; then
+    echo "docker compose"
+  elif have_command docker-compose; then
+    echo "docker-compose"
+  else
+    echo ""
+  fi
+}
 
-# Запуск установки
-echo "⚙️ Запуск интерактивной конфигурации..."
-npm run install
+install_compose_if_missing() {
+  local cmd
+  cmd="$(compose_cmd)"
+  if [ -n "$cmd" ]; then
+    log "Docker Compose is available: $cmd"
+    return
+  fi
 
-# Создание systemd сервиса для автозапуска
-echo "🔧 Создание systemd сервиса..."
-sudo tee /etc/systemd/system/telegram-bot.service > /dev/null <<EOF
-[Unit]
-Description=Telegram Auto Publisher Bot
-After=network.target
+  log "Docker Compose is not installed. Installing compose plugin..."
+  sudo apt-get update
+  sudo apt-get install -y docker-compose-plugin
 
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=/home/$USER/bot
-ExecStart=/usr/bin/node /home/$USER/bot/index.js
-Restart=always
-RestartSec=10
+  cmd="$(compose_cmd)"
+  if [ -z "$cmd" ]; then
+    echo "Docker Compose installation failed." >&2
+    exit 1
+  fi
+}
 
-[Install]
-WantedBy=multi-user.target
-EOF
+ensure_env() {
+  if [ ! -f "$APP_DIR/.env" ]; then
+    if [ -f "$APP_DIR/.env.example" ]; then
+      cp "$APP_DIR/.env.example" "$APP_DIR/.env"
+      echo ".env was created from .env.example. Fill BOT_TOKEN, ADMIN_USER_ID, and chat IDs before starting."
+      exit 1
+    fi
 
-# Включение и запуск сервиса
-echo "▶️ Запуск сервиса..."
-sudo systemctl daemon-reload
-sudo systemctl enable telegram-bot
-sudo systemctl start telegram-bot
+    echo ".env does not exist. Create it before starting the bot." >&2
+    exit 1
+  fi
+}
 
-echo "✅ Развертывание завершено!"
-echo ""
-echo "📊 Проверка статуса:"
-echo "sudo systemctl status telegram-bot"
-echo ""
-echo "📝 Просмотр логов:"
-echo "sudo journalctl -u telegram-bot -f"
-echo ""
-echo "🔄 Перезапуск:"
-echo "sudo systemctl restart telegram-bot"
+start_bot() {
+  local cmd
+  cmd="$(compose_cmd)"
+
+  cd "$APP_DIR"
+  mkdir -p data
+  $cmd up -d --build "$COMPOSE_SERVICE"
+}
+
+show_status() {
+  local cmd
+  cmd="$(compose_cmd)"
+
+  cd "$APP_DIR"
+  $cmd ps
+  echo
+  echo "Logs:    $cmd logs -f $COMPOSE_SERVICE"
+  echo "Restart: $cmd restart $COMPOSE_SERVICE"
+  echo "Stop:    $cmd down"
+}
+
+main() {
+  log "Deploy/update Telegram bot in $APP_DIR"
+  install_docker
+  install_compose_if_missing
+  ensure_env
+  start_bot
+  show_status
+}
+
+main "$@"

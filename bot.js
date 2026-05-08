@@ -110,6 +110,18 @@ function getPostText(ctx) {
   return '';
 }
 
+function getCustomEmojiEntities(message) {
+  const text = message.text || message.caption || '';
+  const entities = message.entities || message.caption_entities || [];
+
+  return entities
+    .filter((entity) => entity.type === 'custom_emoji' && entity.custom_emoji_id)
+    .map((entity) => ({
+      fallback: text.substring(entity.offset, entity.offset + entity.length),
+      id: entity.custom_emoji_id
+    }));
+}
+
 async function notifyModerator(postId, sourceChatId, sourceMessageId, text) {
   if (!ADMIN_USER_ID) {
     console.warn('ADMIN_USER_ID не задан, уведомление модератора не отправлено');
@@ -316,12 +328,35 @@ bot.command('help', (ctx) => {
     '/communities - Список всех сообществ\n' +
     '/pending - Показать посты на модерации\n' +
     '/post <community> <text> - Отправить пост вручную\n' +
+    '/emoji_ids - Показать ID custom emoji из reply-сообщения\n' +
     '/approve <post_id> - Одобрить пост\n' +
     '/reject <post_id> - Отклонить пост\n' +
     '/help - Эта справка\n\n' +
     '🔐 Для администраторских команд требуется прав доступа';
 
   ctx.reply(message, { parse_mode: 'Markdown' });
+});
+
+bot.command('emoji_ids', (ctx) => {
+  if (!isAdmin(ctx)) {
+    return ctx.reply('вќЊ РЈ РІР°СЃ РЅРµС‚ РїСЂР°РІ РґР»СЏ СЌС‚РѕР№ РєРѕРјР°РЅРґС‹');
+  }
+
+  const repliedMessage = ctx.message && ctx.message.reply_to_message;
+  if (!repliedMessage) {
+    return ctx.reply('Reply to a message with custom emoji and send /emoji_ids');
+  }
+
+  const customEmojiEntities = getCustomEmojiEntities(repliedMessage);
+  if (customEmojiEntities.length === 0) {
+    return ctx.reply('No custom emoji entities found in the replied message.');
+  }
+
+  const message = customEmojiEntities
+    .map(({ fallback, id }) => `<tg-emoji emoji-id="${id}">${escapeHtml(fallback)}</tg-emoji> emoji-id=${id}`)
+    .join('\n');
+
+  ctx.reply(message, { parse_mode: 'HTML' });
 });
 
 bot.command('approve', async (ctx) => {

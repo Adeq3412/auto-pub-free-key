@@ -5,22 +5,13 @@ services:
     build: .
     container_name: telegram-auto-publisher
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      # Настройте эти переменные в .env файле
-      - BOT_TOKEN=${BOT_TOKEN}
-      - ADMIN_USER_ID=${ADMIN_USER_ID}
-      - MAIN_CHAT_IDS=${MAIN_CHAT_IDS}
-      - MAIN_FOOTER_TEXT=${MAIN_FOOTER_TEXT}
-      - MAIN_HELP_LINK=${MAIN_HELP_LINK}
-      - MAIN_ADDITIONAL_LINKS=${MAIN_ADDITIONAL_LINKS}
-      - INCY_CHAT_IDS=${INCY_CHAT_IDS}
-      - INCY_FOOTER_TEXT=${INCY_FOOTER_TEXT}
-      - INCY_HELP_LINK=${INCY_HELP_LINK}
-      - INCY_ADDITIONAL_LINKS=${INCY_ADDITIONAL_LINKS}
+      - POSTS_FILE=/app/data/posts.json
     volumes:
-      # Сохраняем данные между перезапусками
-      - ./data:/app/data
       - ./.env:/app/.env
+      - ./data:/app/data
     networks:
       - telegram-bot-network
 
