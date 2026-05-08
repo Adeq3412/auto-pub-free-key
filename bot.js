@@ -14,23 +14,38 @@ function isAdmin(ctx) {
   return ADMIN_USER_ID && ctx.from && ctx.from.id.toString() === ADMIN_USER_ID;
 }
 
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatLinksAsCode(text) {
+  const escaped = escapeHtml(text);
+  return escaped.replace(/\b(?:vless|vmess|trojan|ss|ssr|http|https|socks5|tcp|udp):\/\/[^\s]+/gi, (match) => {
+    return `<pre>${match}</pre>`;
+  });
+}
+
 function buildFullMessage(config, postText) {
   let message = '';
   
   if (config.headerText) {
-    message += config.headerText + '\n\n';
+    message += escapeHtml(config.headerText) + '\n\n';
   }
   
-  message += postText;
+  message += formatLinksAsCode(postText);
   
   if (config.footerText) {
-    message += '\n\n' + config.footerText;
+    message += '\n\n' + escapeHtml(config.footerText);
   }
   if (config.helpLink) {
-    message += `\n🆘 Как подключить (${config.helpLink})`;
+    message += `\n🆘 Как подключить (${escapeHtml(config.helpLink)})`;
   }
   if (config.additionalLinks) {
-    message += '\n' + config.additionalLinks;
+    message += '\n' + escapeHtml(config.additionalLinks);
   }
   return message;
 }
