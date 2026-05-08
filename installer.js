@@ -20,59 +20,66 @@ function question(prompt) {
 }
 
 async function loadEnvFile() {
-  if (fs.existsSync(CONFIG_FILE)) {
-    const content = fs.readFileSync(CONFIG_FILE, 'utf-8');
-    const env = {};
-    content.split('\n').forEach(line => {
-      if (line && !line.startsWith('#')) {
-        const [key, ...valueParts] = line.split('=');
-        env[key.trim()] = valueParts.join('=').trim();
-      }
-    });
-    return env;
+  if (!fs.existsSync(CONFIG_FILE)) {
+    return {};
   }
-  return {};
+
+  const content = fs.readFileSync(CONFIG_FILE, 'utf-8');
+  const env = {};
+
+  content.split('\n').forEach((line) => {
+    if (!line || line.startsWith('#')) {
+      return;
+    }
+
+    const [key, ...valueParts] = line.split('=');
+    env[key.trim()] = valueParts.join('=').trim();
+  });
+
+  return env;
 }
 
 function saveEnvFile(env) {
   let content = '';
+
   for (const [key, value] of Object.entries(env)) {
     if (value) {
       content += `${key}=${value}\n`;
     }
   }
+
   fs.writeFileSync(CONFIG_FILE, content);
 }
 
 async function promptForBotToken(existingEnv) {
-  console.log('\n📱 === КОНФИГУРАЦИЯ TELEGRAM БОТА ===\n');
-  
+  console.log('\n=== Telegram bot config ===\n');
+
   if (existingEnv.BOT_TOKEN) {
-    console.log(`✓ BOT_TOKEN уже установлен: ${existingEnv.BOT_TOKEN.substring(0, 10)}...`);
-    const change = await question('Изменить токен? (y/n): ');
+    console.log(`BOT_TOKEN already set: ${existingEnv.BOT_TOKEN.substring(0, 10)}...`);
+    const change = await question('Change token? (y/n): ');
     if (change.toLowerCase() !== 'y') {
       return existingEnv.BOT_TOKEN;
     }
   }
-  
-  const token = await question('Введите BOT_TOKEN (получить у @BotFather): ');
+
+  const token = await question('Enter BOT_TOKEN from @BotFather: ');
   if (!token) {
-    throw new Error('BOT_TOKEN не может быть пустым');
+    throw new Error('BOT_TOKEN cannot be empty');
   }
+
   return token;
 }
 
 async function promptForAdminId(existingEnv) {
   if (existingEnv.ADMIN_USER_ID) {
-    console.log(`✓ ADMIN_USER_ID уже установлен: ${existingEnv.ADMIN_USER_ID}`);
-    const change = await question('Изменить? (y/n): ');
+    console.log(`ADMIN_USER_ID already set: ${existingEnv.ADMIN_USER_ID}`);
+    const change = await question('Change admin id? (y/n): ');
     if (change.toLowerCase() !== 'y') {
       return existingEnv.ADMIN_USER_ID;
     }
   }
-  
-  const adminId = await question('Введите ADMIN_USER_ID для управления ботом: ');
-  return adminId;
+
+  return question('Enter ADMIN_USER_ID: ');
 }
 
 async function promptForDonor(existingEnv) {
@@ -83,78 +90,75 @@ async function promptForDonor(existingEnv) {
   const donorEnvKey = COMMUNITIES_CONFIG.donor.chatIdsEnv;
   const existingValue = existingEnv[donorEnvKey];
 
-  console.log('\n🏁 === КОНФИГУРАЦИЯ: Донорский канал / группа ===\n');
+  console.log('\n=== Donor chat/channel ===\n');
   if (existingValue) {
-    console.log(`✓ ${donorEnvKey} уже установлен: ${existingValue}`);
-    const change = await question('Изменить? (y/n): ');
+    console.log(`${donorEnvKey} already set: ${existingValue}`);
+    const change = await question('Change donor chat ids? (y/n): ');
     if (change.toLowerCase() !== 'y') {
       return existingValue;
     }
   }
 
-  const newChatIds = await question('Введите ID донорского чата/канала (через запятую): ');
+  const newChatIds = await question('Enter donor chat/channel IDs, comma separated: ');
   return newChatIds || existingValue || '';
 }
 
 async function promptForCommunity(communityKey, communityName, existingEnv) {
   const config = COMMUNITIES_CONFIG.communities[communityKey];
-  
-  console.log(`\n🏢 === КОНФИГУРАЦИЯ: ${communityName} ===\n`);
-  
   const chatIds = existingEnv[config.chatIdsEnv];
+
+  console.log(`\n=== Community: ${communityName} (${communityKey}) ===\n`);
+
   if (chatIds) {
-    console.log(`✓ Chat IDs уже установлены: ${chatIds}`);
-    const change = await question('Изменить? (y/n): ');
+    console.log(`${config.chatIdsEnv} already set: ${chatIds}`);
+    const change = await question('Change this community? (y/n): ');
     if (change.toLowerCase() !== 'y') {
       return {
         chatIds,
+        headerText: existingEnv[config.headerTextEnv] || '',
         footerText: existingEnv[config.footerTextEnv] || '',
-        helpLink: existingEnv[config.helpLinkEnv] || '',
         additionalLinks: existingEnv[config.additionalLinksEnv] || ''
       };
     }
   }
-  
-  const newChatIds = await question('Введите ID чатов (через запятую, например: -1001234567890,-1001234567891): ');
-  const newFooterText = await question('Введите текст подвала (или нажмите Enter для стандартного): ');
-  const newHelpLink = await question('Введите ссылку на инструкцию подключения: ');
-  const newAdditionalLinks = await question('Введите дополнительные ссылки (или нажмите Enter для стандартных): ');
-  
+
+  const newChatIds = await question('Enter target chat/channel IDs, comma separated: ');
+  const newHeaderText = await question('Enter header text: ');
+  const newFooterText = await question('Enter footer text: ');
+  const newAdditionalLinks = await question('Enter additional links: ');
+
   return {
     chatIds: newChatIds || chatIds || '',
+    headerText: newHeaderText || existingEnv[config.headerTextEnv] || '',
     footerText: newFooterText || existingEnv[config.footerTextEnv] || '',
-    helpLink: newHelpLink || existingEnv[config.helpLinkEnv] || '',
     additionalLinks: newAdditionalLinks || existingEnv[config.additionalLinksEnv] || ''
   };
 }
 
 async function interactiveInstall() {
-  console.log('🚀 === УСТАНОВКА/ОБНОВЛЕНИЕ TELEGRAM БОТА ===\n');
-  
+  console.log('=== Telegram bot install/update ===\n');
+
   const existingEnv = await loadEnvFile();
   const newEnv = { ...existingEnv };
-  
-  // Запрос основных параметров
+
   newEnv.BOT_TOKEN = await promptForBotToken(existingEnv);
   newEnv.ADMIN_USER_ID = await promptForAdminId(existingEnv);
   newEnv[COMMUNITIES_CONFIG.donor.chatIdsEnv] = await promptForDonor(existingEnv);
-  
-  // Запрос параметров сообществ
-  const setupCommunities = await question('\nЗадать параметры сообществ? (y/n): ');
+
+  const setupCommunities = await question('\nSet community parameters? (y/n): ');
   if (setupCommunities.toLowerCase() === 'y') {
     for (const [communityKey, communityData] of Object.entries(COMMUNITIES_CONFIG.communities)) {
-      const config = await promptForCommunity(communityKey, communityData.name, existingEnv);
-      newEnv[communityData.chatIdsEnv] = config.chatIds;
-      newEnv[communityData.footerTextEnv] = config.footerText;
-      newEnv[communityData.helpLinkEnv] = config.helpLink;
-      newEnv[communityData.additionalLinksEnv] = config.additionalLinks;
+      const communityConfig = await promptForCommunity(communityKey, communityData.name, existingEnv);
+      newEnv[communityData.chatIdsEnv] = communityConfig.chatIds;
+      newEnv[communityData.headerTextEnv] = communityConfig.headerText;
+      newEnv[communityData.footerTextEnv] = communityConfig.footerText;
+      newEnv[communityData.additionalLinksEnv] = communityConfig.additionalLinks;
     }
   }
-  
-  // Сохранение конфигурации
+
   saveEnvFile(newEnv);
-  console.log('\n✅ Конфигурация сохранена в .env');
-  
+  console.log('\nConfig saved to .env');
+
   rl.close();
 }
 

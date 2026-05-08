@@ -5,6 +5,10 @@ require('dotenv').config();
 const STORAGE_FILE = path.join(__dirname, 'posts.json');
 const COMMUNITIES_CONFIG = require('./config.json');
 
+function readTextEnv(envKey) {
+  return (process.env[envKey] || '').replace(/\\n/g, '\n');
+}
+
 class PostStorage {
   constructor() {
     this.posts = this.loadPosts();
@@ -67,17 +71,15 @@ class ConfigManager {
 
     for (const [communityKey, communityData] of Object.entries(COMMUNITIES_CONFIG.communities)) {
       const chatIds = (process.env[communityData.chatIdsEnv] || '').split(',').filter(id => id.trim());
-      const headerText = process.env[communityData.headerTextEnv] || '';
-      const footerText = process.env[communityData.footerTextEnv] || '';
-      const helpLink = process.env[communityData.helpLinkEnv] || '';
-      const additionalLinks = process.env[communityData.additionalLinksEnv] || '';
+      const headerText = readTextEnv(communityData.headerTextEnv);
+      const footerText = readTextEnv(communityData.footerTextEnv);
+      const additionalLinks = readTextEnv(communityData.additionalLinksEnv);
       
       this.communityConfigs[communityKey] = {
         name: communityData.name,
         chatIds,
         headerText,
         footerText,
-        helpLink,
         additionalLinks
       };
     }

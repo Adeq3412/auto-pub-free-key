@@ -22,27 +22,37 @@ function escapeHtml(text) {
     .replace(/"/g, '&quot;');
 }
 
+const VPN_KEY_PATTERN = /\b(?:vless|vmess|trojan|ss|ssr|hysteria|hysteria2|hy2|tuic|wireguard):\/\/[^\s<]+/gi;
+const SOURCE_HEADER_PATTERN = /^\s*🎁[^\r\n]*(?:\r?\n)+♾️?\s*Безлимитный трафик(?:\r?\n)+🗓\s*Срок действия:\s*2 дня\s*(?:\r?\n)*/u;
+const SOURCE_FOOTER_PATTERN = /(?:\r?\n)*💗\s*С нас ключ\s*-\s*с (?:тебя|Вас) реакция:\s*(?:\r?\n)+🔥\s*—\s*Ключи\s*-\s*(?:огонь|работают)\s*\|\s*👍—\s*(?:Спасибо|От души)\s*$/u;
+
 function formatLinksAsCode(text) {
   const escaped = escapeHtml(text);
-  return escaped.replace(/\b(?:vless|vmess|trojan|ss|ssr|http|https|socks5|tcp|udp):\/\/[^\s]+/gi, (match) => {
-    return `<pre>${match}</pre>`;
+  return escaped.replace(VPN_KEY_PATTERN, (match) => {
+    return `<code>${match}</code>`;
   });
+}
+
+function stripSourceHeader(text) {
+  return text.replace(SOURCE_HEADER_PATTERN, '').trimStart();
+}
+
+function stripSourceFooter(text) {
+  return text.replace(SOURCE_FOOTER_PATTERN, '').trimEnd();
 }
 
 function buildFullMessage(config, postText) {
   let message = '';
+  const bodyText = stripSourceFooter(stripSourceHeader(postText));
   
   if (config.headerText) {
     message += escapeHtml(config.headerText) + '\n\n';
   }
   
-  message += formatLinksAsCode(postText);
+  message += formatLinksAsCode(bodyText);
   
   if (config.footerText) {
     message += '\n\n' + escapeHtml(config.footerText);
-  }
-  if (config.helpLink) {
-    message += `\n🆘 Как подключить (${escapeHtml(config.helpLink)})`;
   }
   if (config.additionalLinks) {
     message += '\n' + escapeHtml(config.additionalLinks);
@@ -75,13 +85,14 @@ async function notifyModerator(postId, sourceChatId, sourceMessageId, text) {
 
   const message =
     `📝 Новый пост на модерации\n` +
-    `ID: ${postId}\n` +
+    `ID: ${escapeHtml(postId)}\n` +
     `Источник: ${sourceChatId}\n` +
     `Сообщение: ${sourceMessageId}\n\n` +
-    `${text}`;
+    `${formatLinksAsCode(text)}`;
 
   try {
     await bot.telegram.sendMessage(ADMIN_USER_ID, message, {
+      parse_mode: 'HTML',
       disable_web_page_preview: true,
       reply_markup: {
         inline_keyboard: [approveButton, rejectButton]
@@ -161,7 +172,7 @@ bot.command('config', (ctx) => {
     message += `🏢 **${config.name}** (${key})\n`;
     message += `  • Чаты: ${config.chatIds.length > 0 ? config.chatIds.join(', ') : 'не настроены'}\n`;
     message += `  • Подвал: ${config.footerText ? '✓' : '✗'}\n`;
-    message += `  • Ссылка помощи: ${config.helpLink ? '✓' : '✗'}\n\n`;
+    message += `  • Доп. ссылки: ${config.additionalLinks ? '✓' : '✗'}\n\n`;
   }
 
   ctx.reply(message, { parse_mode: 'Markdown' });

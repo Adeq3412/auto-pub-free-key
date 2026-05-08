@@ -25,8 +25,8 @@ function addCommunityToConfig(communityKey, communityName) {
     config.communities[communityKey] = {
       name: communityName,
       chatIdsEnv: `${envKeyPrefix}_CHAT_IDS`,
+      headerTextEnv: `${envKeyPrefix}_HEADER_TEXT`,
       footerTextEnv: `${envKeyPrefix}_FOOTER_TEXT`,
-      helpLinkEnv: `${envKeyPrefix}_HELP_LINK`,
       additionalLinksEnv: `${envKeyPrefix}_ADDITIONAL_LINKS`
     };
     
@@ -35,8 +35,8 @@ function addCommunityToConfig(communityKey, communityName) {
     console.log(`✅ Сообщество "${communityKey}" добавлено!\n`);
     console.log(`Добавьте следующие переменные в .env файл:\n`);
     console.log(`${envKeyPrefix}_CHAT_IDS=`);
+    console.log(`${envKeyPrefix}_HEADER_TEXT=`);
     console.log(`${envKeyPrefix}_FOOTER_TEXT=`);
-    console.log(`${envKeyPrefix}_HELP_LINK=`);
     console.log(`${envKeyPrefix}_ADDITIONAL_LINKS=\n`);
     console.log(`Затем запустите установку: node index.js --install`);
     
