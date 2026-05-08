@@ -8,6 +8,7 @@ const configManager = new ConfigManager();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
+const MODERATION_ENABLED = !['0', 'false', 'no', 'off'].includes((process.env.MODERATION_ENABLED || 'true').toLowerCase());
 
 // Middleware для проверки администратора
 function isAdmin(ctx) {
@@ -180,6 +181,24 @@ async function repostToCommunity(postId, communityKey, postText) {
   return count;
 }
 
+async function approvePostForAllCommunities(postId, postText, approvedBy) {
+  const communities = configManager.getAllCommunities();
+  let total = 0;
+
+  for (const communityKey of Object.keys(communities)) {
+    total += await repostToCommunity(postId, communityKey, postText);
+  }
+
+  storage.updatePost(postId, {
+    status: 'approved',
+    approvedAt: new Date().toISOString(),
+    approvedBy,
+    sentCount: total
+  });
+
+  return total;
+}
+
 async function checkDonorMessage(ctx) {
   const chatId = ctx.chat && ctx.chat.id ? ctx.chat.id : (ctx.channelPost && ctx.channelPost.chat && ctx.channelPost.chat.id);
   if (!chatId || !configManager.isDonorChat(chatId)) {
@@ -198,8 +217,20 @@ async function checkDonorMessage(ctx) {
     sourceChatId: chatId,
     sourceMessageId,
     text,
-    status: 'pending'
+    status: MODERATION_ENABLED ? 'pending' : 'auto_approving'
   });
+
+  if (!MODERATION_ENABLED) {
+    const total = await approvePostForAllCommunities(postId, text, 'auto');
+    if (ADMIN_USER_ID) {
+      await bot.telegram.sendMessage(
+        ADMIN_USER_ID,
+        `✅ Пост автоодобрен и отправлен в ${total} чатов\nID: ${escapeHtml(postId)}`,
+        { parse_mode: 'HTML' }
+      );
+    }
+    return true;
+  }
 
   await notifyModerator(postId, chatId, sourceMessageId, text);
   return true;
@@ -375,13 +406,7 @@ bot.command('approve', async (ctx) => {
     return ctx.reply('❌ Пост не найден или уже обработан');
   }
 
-  const communities = configManager.getAllCommunities();
-  let total = 0;
-  for (const communityKey of Object.keys(communities)) {
-    total += await repostToCommunity(postId, communityKey, post.text);
-  }
-
-  storage.updatePost(postId, { status: 'approved', approvedAt: new Date().toISOString(), approvedBy: ctx.from.id, sentCount: total });
+  const total = await approvePostForAllCommunities(postId, post.text, ctx.from.id);
   ctx.reply(`✅ Пост одобрен и отправлен в ${total} чатов`);
 });
 
@@ -432,13 +457,7 @@ bot.action(/^approve_post:(.+)$/, async (ctx) => {
     return;
   }
 
-  const communities = configManager.getAllCommunities();
-  let total = 0;
-  for (const communityKey of Object.keys(communities)) {
-    total += await repostToCommunity(postId, communityKey, post.text);
-  }
-
-  storage.updatePost(postId, { status: 'approved', approvedAt: new Date().toISOString(), approvedBy: ctx.from.id, sentCount: total });
+  const total = await approvePostForAllCommunities(postId, post.text, ctx.from.id);
   await ctx.editMessageText(`✅ Пост одобрен и отправлен в ${total} чатов`);
 });
 
