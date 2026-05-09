@@ -9,6 +9,8 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
 const MODERATION_ENABLED = !['0', 'false', 'no', 'off'].includes((process.env.MODERATION_ENABLED || 'true').toLowerCase());
+const AUTO_DELETE_JOIN_MESSAGES = ['1', 'true', 'yes', 'on'].includes((process.env.AUTO_DELETE_JOIN_MESSAGES || 'false').toLowerCase());
+const AUTO_DELETE_JOIN_MESSAGES_DELAY_MS = Number(process.env.AUTO_DELETE_JOIN_MESSAGES_DELAY_MS || 0);
 
 // Middleware для проверки администратора
 function isAdmin(ctx) {
@@ -460,6 +462,23 @@ bot.on('channel_post', async (ctx) => {
 });
 
 bot.on('message', async (ctx) => {
+  if (AUTO_DELETE_JOIN_MESSAGES && ctx.message && Array.isArray(ctx.message.new_chat_members) && ctx.message.new_chat_members.length > 0) {
+    const chatId = ctx.chat && ctx.chat.id;
+    const messageId = ctx.message.message_id;
+
+    if (chatId && messageId) {
+      try {
+        if (AUTO_DELETE_JOIN_MESSAGES_DELAY_MS > 0) {
+          await new Promise((resolve) => setTimeout(resolve, AUTO_DELETE_JOIN_MESSAGES_DELAY_MS));
+        }
+        await bot.telegram.deleteMessage(chatId, messageId);
+      } catch (error) {
+        console.error('Ошибка удаления сообщения о вступлении:', error.message);
+      }
+    }
+    return;
+  }
+
   if (ctx.message.text && ctx.message.text.startsWith('/')) {
     return;
   }
