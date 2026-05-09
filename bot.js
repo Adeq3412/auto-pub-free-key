@@ -111,6 +111,19 @@ function getPostText(ctx) {
   return '';
 }
 
+function getIncomingMessage(ctx) {
+  return ctx.channelPost || ctx.message || null;
+}
+
+function isPaidIncomingMessage(ctx) {
+  const message = getIncomingMessage(ctx);
+  if (!message) {
+    return false;
+  }
+
+  return Boolean(message.is_paid_post || (Array.isArray(message.paid_media) && message.paid_media.length > 0));
+}
+
 function getCustomEmojiEntities(message) {
   const text = message.text || message.caption || '';
   const entities = message.entities || message.caption_entities || [];
@@ -203,6 +216,18 @@ async function checkDonorMessage(ctx) {
   const chatId = ctx.chat && ctx.chat.id ? ctx.chat.id : (ctx.channelPost && ctx.channelPost.chat && ctx.channelPost.chat.id);
   if (!chatId || !configManager.isDonorChat(chatId)) {
     return false;
+  }
+
+  if (isPaidIncomingMessage(ctx)) {
+    if (ADMIN_USER_ID) {
+      const message = getIncomingMessage(ctx);
+      const sourceMessageId = message && message.message_id ? message.message_id : 'unknown';
+      await bot.telegram.sendMessage(
+        ADMIN_USER_ID,
+        `⚠️ Пропущен платный пост из донора\nИсточник: ${chatId}\nСообщение: ${sourceMessageId}`
+      );
+    }
+    return true;
   }
 
   const text = getPostText(ctx).trim();
