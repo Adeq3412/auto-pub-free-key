@@ -462,7 +462,10 @@ bot.on('channel_post', async (ctx) => {
 });
 
 bot.on('message', async (ctx) => {
-  if (AUTO_DELETE_JOIN_MESSAGES && ctx.message && Array.isArray(ctx.message.new_chat_members) && ctx.message.new_chat_members.length > 0) {
+  const hasJoinNotice = ctx.message && Array.isArray(ctx.message.new_chat_members) && ctx.message.new_chat_members.length > 0;
+  const hasLeftNotice = ctx.message && ctx.message.left_chat_member;
+
+  if (AUTO_DELETE_JOIN_MESSAGES && (hasJoinNotice || hasLeftNotice)) {
     const chatId = ctx.chat && ctx.chat.id;
     const messageId = ctx.message.message_id;
 
